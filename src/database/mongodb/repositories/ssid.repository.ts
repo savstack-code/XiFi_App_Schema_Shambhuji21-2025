@@ -1,32 +1,8 @@
-//import ISsidCreateRequest from "../../../models/schema/ssid/ssid.create.schema";
 import SSIDModel from "../models/ssid.model";
 import { ISsidCreateRequest } from "../../../reqSchema/ssid.schema";
 
 export class SsidRepository {
   async find() {
-    // let findManyOptions: any = {
-    //   select: [
-    //     "identifier",
-    //     "providerID",
-    //     "locationName",
-    //     "state",
-    //     "type",
-    //     "cPURL",
-    //     "latitude",
-    //     "langitude",
-    //     "address",
-    //     "deviceID",
-    //     "status",
-    //     "sSID",
-    //     "openBetween",
-    //     "avgSpeed",
-    //     "freeBand",
-    //     "paymentModes",
-    //     "description",
-    //     "loginScheme",
-    //   ],
-    // };
-    // return this.manager.find(SSID, findManyOptions);
     return SSIDModel.aggregate([
       {
         $match: { status: "Active" },
@@ -56,9 +32,6 @@ export class SsidRepository {
         },
       },
     ]);
-    // return this.manager.find(SSID, {
-    //   where: { locationName: location },
-    // });
   }
 
   async createAndSave(request: ISsidCreateRequest["body"]) {
@@ -106,7 +79,7 @@ export class SsidRepository {
             type: "Point",
             coordinates: [
               Number(requestModel.langitude),
-              Number(requestModel.langitude),
+              Number(requestModel.latitude),
             ],
           },
         },
@@ -119,6 +92,59 @@ export class SsidRepository {
     );
   }
 
+  async bulkCreateAndUpdate(requestModels: ISsidCreateRequest["body"][]) {
+    if (!requestModels.length) {
+      return { acknowledged: true, upsertedCount: 0, modifiedCount: 0 };
+    }
+
+    // Use a single timestamp for all operations
+    const now = new Date();
+
+    // Prepare bulk operations for maximum performance
+    const bulkOps = requestModels.map((requestModel) => ({
+      updateOne: {
+        filter: { deviceID: requestModel.deviceId },
+        update: {
+          $set: {
+            // Only set the fields we need instead of spreading all properties
+            providerID: requestModel.providerID,
+            locationName: requestModel.locationName,
+            state: requestModel.state,
+            locationType: requestModel.type,
+            latitude: requestModel.latitude,
+            langitude: requestModel.langitude,
+            address: requestModel.address,
+            status: requestModel.status,
+            openBetween: requestModel.openBetween,
+            avgSpeed: requestModel.avgSpeed,
+            freeBand: requestModel.freeBand,
+            paymentModes: requestModel.paymentModes,
+            description: requestModel.description,
+            loginScheme: requestModel.loginScheme,
+            sSID: requestModel.ssid,
+            cPURL: requestModel.cpUrl,
+            modifiedOn: now,
+            location: {
+              type: "Point",
+              coordinates: [
+                Number(requestModel.langitude),
+                Number(requestModel.latitude),
+              ],
+            },
+          },
+          $setOnInsert: {
+            createdOn: now,
+            createdBy: "Cron",
+          },
+        },
+        upsert: true,
+      },
+    }));
+
+    // Execute bulk operation with ordered: false for better performance
+    return SSIDModel.bulkWrite(bulkOps, { ordered: false });
+  }
+
   async update(ssid: ISsidCreateRequest) {
     const ssidData = new SSIDModel(ssid);
     return ssidData.save();
@@ -126,28 +152,6 @@ export class SsidRepository {
   }
 
   async findQuery(queryObject: { [k: string]: any }) {
-    // let findOptions: any = {
-    //   select: [
-    //     "identifier",
-    //     "providerID",
-    //     "locationName",
-    //     "state",
-    //     "type",
-    //     "cPURL",
-    //     "latitude",
-    //     "langitude",
-    //     "address",
-    //     "deviceID",
-    //     "status",
-    //     "sSID",
-    //     "openBetween",
-    //     "avgSpeed",
-    //     "freeBand",
-    //     "paymentModes",
-    //     "description",
-    //     "loginScheme",
-    //   ],
-    // };
     queryObject.status = "Active";
     return SSIDModel.aggregate([
       { $match: queryObject },
@@ -158,7 +162,6 @@ export class SsidRepository {
         },
       },
     ]);
-    // return this.manager.find(SSID, findOptions);
   }
 
   async findOne(identifier: string) {
@@ -182,44 +185,18 @@ export class SsidRepository {
       "description",
       "loginScheme",
     ]);
-    // return this.manager.findOne(SSID, {
-    //   select: [
-    //     "identifier",
-    //     "providerID",
-    //     "locationName",
-    //     "state",
-    //     "type",
-    //     "cPURL",
-    //     "latitude",
-    //     "langitude",
-    //     "address",
-    //     "deviceID",
-    //     "status",
-    //     "sSID",
-    //     "openBetween",
-    //     "avgSpeed",
-    //     "freeBand",
-    //     "paymentModes",
-    //     "description",
-    //     "loginScheme",
-    //   ],
-    //   where: { identifier: identifier },
-    // });
   }
 
   async findByDeviceId(deviceID: string) {
-    const du = deviceID.toUpperCase()
-    const dl = deviceID.toLowerCase()
-    return await SSIDModel.findOne({$or:[{ deviceID: dl},{deviceID:du}]});
-    // return this.manager.findOne(SSID, {
-    //   where: { deviceID: deviceId },
-    //   ...(select ? { select } : {}),
-    // });
+    const du = deviceID.toUpperCase();
+    const dl = deviceID.toLowerCase();
+    return await SSIDModel.findOne({
+      $or: [{ deviceID: dl }, { deviceID: du }],
+    });
   }
 
   async findByIdentifier(identifier: string) {
     return SSIDModel.findOne({ _id: identifier });
-    // return this.manager.findOne(SSID, { where: { identifier: identifier } });
   }
 
   async findByDeviceIdNotEqualToIdentifier(
@@ -231,13 +208,6 @@ export class SsidRepository {
       deviceID,
       status: "Active",
     });
-    // return this.manager.findOne(SSID, {
-    //   where: {
-    //     identifier: Not(Equal(identifier)),
-    //     deviceID: deviceId,
-    //     status: "Active",
-    //   },
-    // });
   }
 
   async findBySsidNameNotEqualToIdentifier(identifier: string, sSID: string) {
@@ -246,20 +216,11 @@ export class SsidRepository {
       sSID,
       status: "Active",
     });
-
-    // return this.manager.findOne(SSID, {
-    //   where: {
-    //     identifier: Not(Equal(identifier)),
-    //     sSID: ssid,
-    //     status: "Active",
-    //   },
-    // });
   }
 
   async remove(ssid: ISsidCreateRequest) {
     const ssidData = new SSIDModel();
     return ssidData.remove();
-    // return this.manager.remove(ssid);
   }
   async findGeoNear(filter: { lat: number; lng: number }, page: number) {
     const limit = 500;
