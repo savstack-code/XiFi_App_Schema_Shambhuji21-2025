@@ -1,0 +1,5 @@
+apps:
+  - script: ./dist/service.js
+    instances: 2
+    exec_mode: cluster
+    name: xifi_app_server_v_3.4.0.0

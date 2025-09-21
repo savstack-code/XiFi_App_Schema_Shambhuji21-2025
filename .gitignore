@@ -1,0 +1,16 @@
+.idea/
+.vscode/
+node_modules/
+dist/
+tmp/
+temp/
+*.log
+log/
+coverage/
+.env
+.env.swp
+.tscache
+sessions/
+certs/
+*.zip
+cert_notifications.p8
