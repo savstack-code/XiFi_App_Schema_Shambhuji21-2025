@@ -72,8 +72,6 @@ export const checkSsidParams = (
 ) => {
   if (!req.params.identifier) {
     throw new HTTP400Error("Missing identifier parameter.");
-  } else if (isNaN(req.params.identifier)) {
-    throw new HTTP400Error("Identifier parameter should be a number.");
   } else {
     next();
   }

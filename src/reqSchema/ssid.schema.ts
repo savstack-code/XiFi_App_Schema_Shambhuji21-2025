@@ -90,14 +90,36 @@ export interface ISsidUpdateRequest {
   loginScheme: string;
 }
 
+export const ssidUpdateSchema: IRequestSchema = {
+  params: Joi.object().keys({
+    identifier: Joi.string().required().max(36).label("Identifier"),
+  }),
+  body: Joi.object()
+    .keys({
+      providerID: Joi.string().label("providerID"),
+      cpUrl: Joi.string().label("cPRUL"),
+      locationName: Joi.string().label("locationName"),
+      state: Joi.string().label("state"),
+      type: Joi.string().label("type"),
+      latitude: Joi.string().label("latitude"),
+      langitude: Joi.string().label("langitude"),
+      address: Joi.string().label("address"),
+      deviceId: Joi.string().label("deviceId"),
+      status: Joi.string().valid("Active", "InActive").label("status"),
+      ssid: Joi.string().label("sSID"),
+      openBetween: Joi.string().label("openBetween"),
+      avgSpeed: Joi.number().allow(0).integer().label("avgSpeed"),
+      freeBand: Joi.number().allow(0).integer().label("freeBand"),
+      paymentModes: Joi.string().label("paymentModes"),
+      description: Joi.string().label("description"),
+      loginScheme: Joi.string().label("loginScheme"),
+    })
+    .unknown(false),
+};
+
 export const getSsidsSchema: IRequestSchema = {
   query: Joi.object().keys({
-    userDeviceId: Joi.string()
-      .regex(
-        /^(\{{0,1}([0-9a-fA-F]){8}-([0-9a-fA-F]){4}-([0-9a-fA-F]){4}-([0-9a-fA-F]){4}-([0-9a-fA-F]){12}\}{0,1})$/
-      )
-      .required()
-      .label("User Device Id"),
+    userDeviceId: Joi.string().required().max(36).label("User Device Id"),
     location: Joi.string()
       .regex(/^[A-Za-z]+$/)
       .allow("")
@@ -129,27 +151,35 @@ export const nearBySSIDs: IRequestSchema = {
   }),
 };
 
-
 export interface CityListSchema extends Request {
   query: {
     city?: string;
-  },
-  params:{
-    identifier:string;
+  };
+  params: {
+    identifier: string;
   };
 }
 
 export const cityRequest: IRequestSchema = {
   query: Joi.object({
-    city: Joi.string().allow("")
+    city: Joi.string().allow(""),
   }),
   params: Joi.object().keys({
-    identifier: Joi.string()
-      .label("SSID State ID"),
-  })
+    identifier: Joi.string().label("SSID State ID"),
+  }),
 };
 
+export interface IdentifierSchema extends Request {
+  params: {
+    identifier: string;
+  };
+}
 
+export const checkIdentifierSchema: IRequestSchema = {
+  params: Joi.object().keys({
+    identifier: Joi.string().max(36).required().label("Identifier"),
+  }),
+};
 
 export interface StateRequest extends Request {
   query: {
@@ -159,6 +189,6 @@ export interface StateRequest extends Request {
 
 export const stateRequest: IRequestSchema = {
   query: Joi.object({
-    state: Joi.string().allow("")
+    state: Joi.string().allow(""),
   }),
 };
