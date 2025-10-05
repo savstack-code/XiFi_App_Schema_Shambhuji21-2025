@@ -164,6 +164,12 @@ export class SsidRepository {
     ]);
   }
 
+  // New method for streaming data using find with cursor
+  findQueryStreamCursor(queryObject: { [k: string]: any }) {
+    queryObject.status = "Active";
+    return SSIDModel.find(queryObject).cursor({ batchSize: 100 });
+  }
+
   async findOne(identifier: string) {
     return SSIDModel.findOne({ _id: identifier }).select([
       "identifier",

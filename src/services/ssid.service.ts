@@ -9,9 +9,17 @@ import { APRequestRepository } from "../database/mongodb/repositories/apRequest.
 // import { UserDeviceRepository } from "../database/repositories/user.device.repository";
 import { UserDeviceRepository } from "../database/mongodb/repositories/user.device.repository";
 // import ISsidCreateRequest from "../models/schema/ssid/ssid.create.schema";
-import { INearBySSIDs, ISsidCreateRequest, StateRequest } from "../reqSchema/ssid.schema";
+import {
+  INearBySSIDs,
+  ISsidCreateRequest,
+  StateRequest,
+} from "../reqSchema/ssid.schema";
 import { ServiceResponse } from "../models/response/ServiceResponse";
-import { ISsidUpdateRequest, INewAPReq, CityListSchema } from "../reqSchema/ssid.schema";
+import {
+  ISsidUpdateRequest,
+  INewAPReq,
+  CityListSchema,
+} from "../reqSchema/ssid.schema";
 
 export class SsidService {
   ssidRepository: SsidRepository;
@@ -41,6 +49,11 @@ export class SsidService {
       return serviceResponse.setSuccess(ssids);
     }
     return serviceResponse.setError("No Ssids are found.", "404");
+  }
+
+  // New method for streaming SSIDs
+  public getSsidsStream(query: any) {
+    return this.ssidRepository.findQueryStreamCursor(query);
   }
 
   public async createSsid(
@@ -190,14 +203,17 @@ export class SsidService {
     return serviceResponse.setSuccess(result);
   }
 
-  async stateBySsid(request : StateRequest["query"]) {
+  async stateBySsid(request: StateRequest["query"]) {
     const serviceResponse = new ServiceResponse();
-    const stateName = request.state || '';
+    const stateName = request.state || "";
     const result = await this.ssidRepository.stateGroupBySsid(stateName);
     return serviceResponse.setSuccess(result);
   }
 
-  async cityBySsid(params : CityListSchema['params'], query : CityListSchema['query']) {
+  async cityBySsid(
+    params: CityListSchema["params"],
+    query: CityListSchema["query"]
+  ) {
     const serviceResponse = new ServiceResponse();
     const identifier = params.identifier;
     const city = query.city || "";

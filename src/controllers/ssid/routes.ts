@@ -4,6 +4,7 @@ import {
   deleteSsid,
   getSsids,
   getSsidByIdentifier,
+  streamSsids,
 } from "./ssid.controller";
 import SsidUpdateRequest from "../../models/request/ssid/ssid.update.request";
 import {
@@ -28,7 +29,10 @@ import {
   CityListSchema,
   cityRequest,
   stateRequest,
-  StateRequest
+  StateRequest,
+  checkIdentifierSchema,
+  IdentifierSchema,
+  ssidUpdateSchema,
 } from "../../reqSchema/ssid.schema";
 const routes: IRouteInfo[] = [
   {
@@ -74,6 +78,7 @@ const routes: IRouteInfo[] = [
     method: "put",
     tags: ["SSID"],
     description: `Update SSID`,
+    validationSchema: ssidUpdateSchema,
     handler: [
       checkSsidParams,
       validateSsidUpdateRequest,
@@ -98,15 +103,16 @@ const routes: IRouteInfo[] = [
     method: "get",
     tags: ["SSID"],
     description: `Get SSID details`,
+    validationSchema: checkIdentifierSchema,
     handler: [
       checkSsidParams,
       async (
-        { query, body, params }: Request,
+        { query, body, params }: IdentifierSchema,
         res: Response,
         next: NextFunction
       ) => {
         try {
-          const result = await getSsidByIdentifier(<string>params.identifier);
+          const result = await getSsidByIdentifier(params.identifier);
           res.status(200).send(result);
         } catch (error) {
           next(error);
@@ -118,7 +124,23 @@ const routes: IRouteInfo[] = [
     path: `/api/v${process.env.API_VERSION}/ssid`,
     method: "get",
     tags: ["SSID"],
-    description: `List all SSIDs`,
+    description: `List all SSIDs (Streaming)`,
+    handler: [
+      validateSsidFilterRequest,
+      async ({ query, body }: Request, res: Response, next: NextFunction) => {
+        try {
+          await streamSsids(query, res);
+        } catch (error) {
+          next(error);
+        }
+      },
+    ],
+  },
+  {
+    path: `/api/v${process.env.API_VERSION}/ssid/legacy`,
+    method: "get",
+    tags: ["SSID"],
+    description: `List all SSIDs (Legacy - Non-streaming)`,
     handler: [
       validateSsidFilterRequest,
       async ({ query, body }: Request, res: Response, next: NextFunction) => {
@@ -136,11 +158,16 @@ const routes: IRouteInfo[] = [
     method: "delete",
     tags: ["SSID"],
     description: `Delete SSID`,
+    validationSchema: checkIdentifierSchema,
     handler: [
       checkSsidParams,
-      async ({ query, params }: Request, res: Response, next: NextFunction) => {
+      async (
+        { query, params }: IdentifierSchema,
+        res: Response,
+        next: NextFunction
+      ) => {
         try {
-          const result = await deleteSsid(<string>params.identifier);
+          const result = await deleteSsid(params.identifier);
           res.status(200).send(result);
         } catch (error) {
           next(error);
@@ -168,7 +195,7 @@ const routes: IRouteInfo[] = [
     description: `get all state's SSID count`,
     validationSchema: stateRequest,
     handler: [
-      async (req : StateRequest, res: Response) => {
+      async (req: StateRequest, res: Response) => {
         const result = await ssidService.stateBySsid(req.query);
         res.json(result);
       },
@@ -182,7 +209,7 @@ const routes: IRouteInfo[] = [
     validationSchema: cityRequest,
     handler: [
       async ({ query, params, body }: CityListSchema, res: Response) => {
-        const result = await ssidService.cityBySsid(params,query);
+        const result = await ssidService.cityBySsid(params, query);
         res.json(result);
       },
     ],
